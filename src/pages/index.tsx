@@ -53,12 +53,10 @@ export default function Home() {
   const provider = new JsonRpcProvider();
   const { account, connected, signAndExecuteTransaction } = useWallet();
   const [formInput, updateFormInput] = useState<{
-    name: string;
-    url: string;
+    title: string;
     description: string;
   }>({
-    name: "",
-    url: "",
+    title: "",
     description: "",
   });
   const [message, setMessage] = useState('');
@@ -68,18 +66,19 @@ export default function Home() {
   const [recipient, updateRecipient] = useState("");
   const [transfer_id, setTransferId] = useState("");
 
-  async function mint_example_nft() {
+  async function create_new_todo_action() {
     setMessage("");
     try {
-      const data = create_example_nft()
+      const data = create_todo_data()
       const resData = await signAndExecuteTransaction({
         transaction: {
           kind: 'moveCall',
           data,
         },
       });
+      updateFormInput({ title: "", description: "" })
       console.log('success', resData);
-      setMessage('Mint succeeded');
+      setMessage('Added succeeded');
       if (resData && resData.certificate && resData.certificate.transactionDigest) {
         setTx('https://explorer.sui.io/transaction/' + resData.certificate.transactionDigest)
       }
@@ -90,17 +89,16 @@ export default function Home() {
     }
   }
 
-  function create_todo() {
-    const { name, url, description } = formInput;
+  function create_todo_data() {
+    const { title, description } = formInput;
     return {
       packageObjectId: SUI_PACKAGE,
       module: 'todo',
-      function: 'mint',
+      function: 'create_todo_item',
       typeArguments: [],
       arguments: [
-        name,
+        title,
         description,
-        url,
       ],
       gasBudget: 30000,
     };
@@ -132,7 +130,7 @@ export default function Home() {
         },
       });
       console.log('success', resData);
-      setMessage('Mint succeeded');
+      setMessage('Added succeeded');
       if (resData && resData.certificate && resData.certificate.transactionDigest) {
         setTx('https://explorer.sui.io/transaction/' + resData.certificate.transactionDigest)
       }
@@ -148,7 +146,7 @@ export default function Home() {
     toggleDisplay(true);
   }
 
-  async function fetch_sword() {
+  async function fetch_todos() {
     const objects = await provider.getObjectsOwnedByAddress(account!.address)
     const todoIds = objects
       .filter(item => item.type === SUI_PACKAGE + "::" + SUI_MODULE + "::TodoItem")
@@ -169,7 +167,7 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       if (connected) {
-        fetch_sword()
+        fetch_todos()
       }
     })()
   }, [connected, tx])
@@ -202,30 +200,23 @@ export default function Home() {
         <div className="card-body">
           <h2 className="card-title">Add Todo Item:</h2>
           <input
-            placeholder="NFT Name"
+            placeholder="title"
             className="mt-4 p-4 input input-bordered input-primary w-full"
             onChange={(e) =>
-              updateFormInput({ ...formInput, name: e.target.value })
+              updateFormInput({ ...formInput, title: e.target.value })
             }
           />
           <input
-            placeholder="NFT Description"
+            placeholder="description"
             className="mt-8 p-4 input input-bordered input-primary w-full"
             onChange={(e) =>
               updateFormInput({ ...formInput, description: e.target.value })
             }
           />
-          <input
-            placeholder="NFT IMAGE URL"
-            className="mt-8 p-4 input input-bordered input-primary w-full"
-            onChange={(e) =>
-              updateFormInput({ ...formInput, url: e.target.value })
-            }
-          />
           <p className="mt-4">{message}{message && <Link href={tx}>, View transaction</Link>}</p>
           <div className="card-actions justify-end">
             <button
-              onClick={mint_example_nft}
+              onClick={create_new_todo_action}
               className={
                 "btn btn-primary btn-xl"
               }>
