@@ -35,15 +35,15 @@ const TodoList = ({ todos, done, remove }: TodoListPros) => {
             <tbody>
 
               {
-                todos.map((item, i) =>
-                  <tr>
+                todos.map((item) =>
+                  <tr key={item.id}>
                     <th>{item.id}</th>
                     <td>{item.title}</td>
                     <td>{item.description} </td>
                     <td>{allStatus[item.status]} </td>
                     <td>
-                      <a href="javascript:;" className="link link-hover link-primary" onClick={() => { done(item.id) }}>Done</a>
-                      <a href="javascript:;" className="link link-hover link-primary ml-3" onClick={() => { remove(item.id) }}>Remove</a>
+                      <a className="link link-hover link-primary" onClick={() => { done(item.id) }}>Done</a>
+                      <a className="link link-hover link-primary ml-3" onClick={() => { remove(item.id) }}>Remove</a>
                     </td>
                   </tr>
                 )
@@ -56,7 +56,7 @@ const TodoList = ({ todos, done, remove }: TodoListPros) => {
   )
 }
 
-export default function Home() {
+function Home() {
   const provider = new JsonRpcProvider();
   const { account, connected, signAndExecuteTransaction } = useWallet();
   const [formInput, updateFormInput] = useState<{
@@ -268,3 +268,5 @@ export default function Home() {
     </div >
   );
 }
+
+export default Home;
