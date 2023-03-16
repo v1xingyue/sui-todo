@@ -13,8 +13,8 @@ const allStatus: NumberMap<string> = {
   1: "done"
 }
 
-type TodoListPros = { todos: Array<any>, done: Function };
-const TodoList = ({ todos, done }: TodoListPros) => {
+type TodoListPros = { todos: Array<any>, done: Function, remove: Function };
+const TodoList = ({ todos, done, remove }: TodoListPros) => {
   return todos && (
     <div className="card lg:card-side bg-base-100 shadow-xl mt-5">
       <div className="card-body">
@@ -42,6 +42,7 @@ const TodoList = ({ todos, done }: TodoListPros) => {
                     <td>{allStatus[item.status]} </td>
                     <td>
                       <a href="javascript:;" className="link link-hover link-primary" onClick={() => { done(item.id) }}>Done</a>
+                      <a href="javascript:;" className="link link-hover link-primary ml-3" onClick={() => { remove(item.id) }}>Remove</a>
                     </td>
                   </tr>
                 )
@@ -135,7 +136,7 @@ export default function Home() {
         },
       });
       console.log('success', resData);
-      setMessage('Added succeeded');
+      setMessage('Status changed');
       if (resData && resData.certificate && resData.certificate.transactionDigest) {
         setTx('https://explorer.sui.io/transaction/' + resData.certificate.transactionDigest)
       }
@@ -149,6 +150,42 @@ export default function Home() {
   async function done_action(id: string) {
     setTodoId(id);
     toggleDisplay(true);
+  }
+
+  async function remove_action(todo_id: string) {
+    function makeTranscaction() {
+      return {
+        packageObjectId: SUI_PACKAGE,
+        module: SUI_MODULE,
+        function: 'delete_todo_item',
+        typeArguments: [],
+        // 类型错误，传递字符串类型，部分钱包会内部转化
+        arguments: [
+          todo_id,
+        ],
+        gasBudget: 30000,
+      };
+    }
+
+    setMessage("");
+    try {
+      const data = makeTranscaction();
+      const resData = await signAndExecuteTransaction({
+        transaction: {
+          kind: 'moveCall',
+          data,
+        },
+      });
+      console.log('success', resData);
+      setMessage('Todo Removed.');
+      if (resData && resData.certificate && resData.certificate.transactionDigest) {
+        setTx('https://explorer.sui.io/transaction/' + resData.certificate.transactionDigest)
+      }
+    } catch (e) {
+      console.error('failed', e);
+      setMessage('Mint failed: ' + e);
+      setTx('');
+    }
   }
 
   async function fetch_todos() {
@@ -223,7 +260,7 @@ export default function Home() {
         </div>
       </div>
 
-      <TodoList todos={todos} done={done_action} />
+      <TodoList todos={todos} done={done_action} remove={remove_action} />
     </div >
   );
 }
