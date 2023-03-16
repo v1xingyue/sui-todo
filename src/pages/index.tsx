@@ -2,15 +2,20 @@ import { useWallet } from "@suiet/wallet-kit";
 import { useEffect, useState } from "react";
 import React from "react";
 import Link from 'next/link';
-import { JsonRpcProvider, SuiPackage } from '@mysten/sui.js';
+import { JsonRpcProvider } from '@mysten/sui.js';
 import { SUI_PACKAGE, SUI_MODULE } from "../config/constants";
-import * as tweetnacl from 'tweetnacl';
-import { toHEX } from '@mysten/bcs';
 
+type NumberMap<T> = {
+  [key: number]: T;
+};
+const allStatus: NumberMap<string> = {
+  0: "doing",
+  1: "done"
+}
 
-type SwordListPros = { swords: Array<any>, transfer: Function };
-const SwordList = ({ swords, transfer }: SwordListPros) => {
-  return swords && (
+type TodoListPros = { todos: Array<any>, done: Function };
+const TodoList = ({ todos, done }: TodoListPros) => {
+  return todos && (
     <div className="card lg:card-side bg-base-100 shadow-xl mt-5">
       <div className="card-body">
         <h2 className="card-title">todo list:</h2>
@@ -29,14 +34,14 @@ const SwordList = ({ swords, transfer }: SwordListPros) => {
             <tbody>
 
               {
-                swords.map((item, i) =>
+                todos.map((item, i) =>
                   <tr>
                     <th>{item.id}</th>
                     <td>{item.title}</td>
                     <td>{item.description} </td>
-                    <td>{item.status} </td>
+                    <td>{allStatus[item.status]} </td>
                     <td>
-                      <a href="javascript:;" className="link link-hover link-primary" onClick={() => { transfer(item.id) }}>Transfer</a>
+                      <a href="javascript:;" className="link link-hover link-primary" onClick={() => { done(item.id) }}>Done</a>
                     </td>
                   </tr>
                 )
@@ -61,10 +66,10 @@ export default function Home() {
   });
   const [message, setMessage] = useState('');
   const [tx, setTx] = useState('');
-  const [swords, setSword] = useState<Array<any>>([]);
+  const [todos, setTodos] = useState<Array<any>>([]);
   const [displayModal, toggleDisplay] = useState(false);
   const [recipient, updateRecipient] = useState("");
-  const [transfer_id, setTransferId] = useState("");
+  const [todo_id, setTodoId] = useState("");
 
   async function create_new_todo_action() {
     setMessage("");
@@ -104,17 +109,17 @@ export default function Home() {
     };
   }
 
-  async function doTransfer() {
+  async function doStatusChange(status: string) {
     function makeTranscaction() {
       return {
         packageObjectId: SUI_PACKAGE,
         module: SUI_MODULE,
-        function: 'sword_transfer',
+        function: 'change_todo_status',
         typeArguments: [],
         // 类型错误，传递字符串类型，部分钱包会内部转化
         arguments: [
-          transfer_id,
-          recipient,
+          todo_id,
+          status
         ],
         gasBudget: 30000,
       };
@@ -141,8 +146,8 @@ export default function Home() {
     }
   }
 
-  async function transferSword(id: string) {
-    setTransferId(id);
+  async function done_action(id: string) {
+    setTodoId(id);
     toggleDisplay(true);
   }
 
@@ -153,15 +158,15 @@ export default function Home() {
       .map(item => item.objectId)
     const swordObjects = await provider.getObjectBatch(todoIds)
     const todoList = swordObjects.map((item: any) => {
-      console.log(item);
       return {
         id: item.details.data.fields.id.id,
         title: item.details.data.fields.title,
         description: item.details.data.fields.description,
-        status: item.details.data.fields.status
+        status: item.details.data.fields.status,
+        statusText: ""
       }
     })
-    setSword(todoList)
+    setTodos(todoList)
   }
 
   useEffect(() => {
@@ -178,19 +183,11 @@ export default function Home() {
       <div className={displayModal ? "modal modal-bottom sm:modal-middle modal-open" : "modal modal-bottom sm:modal-middle"}>
         <div className="modal-box">
           <label onClick={() => { toggleDisplay(false) }} className="btn btn-sm btn-circle absolute right-2 top-2">✕</label>
-          <h3 className="font-bold text-lg">Input recent address</h3>
-          <input
-            placeholder="Recipient"
-            className="mt-8 p-4 input input-bordered input-primary w-full"
-            value={recipient}
-            onChange={(e) =>
-              updateRecipient(e.target.value)
-            }
-          />
+
           <div className="modal-action">
             <label htmlFor="my-modal-6" className="btn" onClick={() => {
               toggleDisplay(!displayModal);
-              doTransfer();
+              doStatusChange("1");
             }}>Done!</label>
           </div>
         </div>
@@ -226,7 +223,7 @@ export default function Home() {
         </div>
       </div>
 
-      <SwordList swords={swords} transfer={transferSword} />
+      <TodoList todos={todos} done={done_action} />
     </div >
   );
 }
