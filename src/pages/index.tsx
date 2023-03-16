@@ -4,6 +4,7 @@ import React from "react";
 import Link from 'next/link';
 import { JsonRpcProvider } from '@mysten/sui.js';
 import { SUI_PACKAGE, SUI_MODULE } from "../config/constants";
+import Head from 'next/head';
 
 type NumberMap<T> = {
   [key: number]: T;
@@ -217,6 +218,9 @@ export default function Home() {
 
   return (
     <div>
+      <Head>
+        <title>Sui Todo List</title>
+      </Head>
       <div className={displayModal ? "modal modal-bottom sm:modal-middle modal-open" : "modal modal-bottom sm:modal-middle"}>
         <div className="modal-box">
           <label onClick={() => { toggleDisplay(false) }} className="btn btn-sm btn-circle absolute right-2 top-2">✕</label>
