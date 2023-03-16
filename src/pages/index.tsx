@@ -2,113 +2,28 @@ import { useWallet } from "@suiet/wallet-kit";
 import { useEffect, useState } from "react";
 import React from "react";
 import Link from 'next/link';
-import { JsonRpcProvider } from '@mysten/sui.js';
+import { JsonRpcProvider, SuiPackage } from '@mysten/sui.js';
 import { SUI_PACKAGE, SUI_MODULE } from "../config/constants";
-import { useRouter } from "next/router";
 import * as tweetnacl from 'tweetnacl';
 import { toHEX } from '@mysten/bcs';
 
-const BaseAddr = "0x2";
-type NftListPros = { nfts: Array<{ url: string, id: string, name: string, description: string }> };
-const NftList = ({ nfts }: NftListPros) => {
-  return nfts && (
-    <div className="card lg:card-side bg-base-100 shadow-xl mt-5">
-      <div className="card-body">
-        <h2 className="card-title">Minted NFTs:</h2>
-        {
-          nfts.map((item, i) => <div className="gallery" key={item.id}>
-            <a target="_blank" href={"https://explorer.sui.io/object/" + item.id + "?network=" + process.env.NEXT_PUBLIC_SUI_NETWORK}>
-              <img src={item.url} max-width="300" max-height="200"></img>
-              <div className="name">{item.name}</div>
-              <div className="desc">{item.description}</div>
-            </a>
-          </div>)
-        }
-      </div>
-    </div>
-  )
-}
 
-const Signer = () => {
-  const router = useRouter();
-  const [data, updateSignData] = useState("");
-  const [result, updateSignResult] = useState("");
-  useEffect(() => {
-    (async () => {
-      console.log("render once ...");
-      if (typeof router.query.msg == 'string') {
-        updateSignData(router.query.msg);
-      }
-    })();
-  }, [router.query]);
-  const wallet = useWallet();
-
-  const signContentAction = async () => {
-    try {
-      const result = await wallet.signMessage({
-        message: new TextEncoder().encode(data)
-      })
-      if (!result) return
-      console.log('signMessage success', result)
-      const isSignatureTrue = tweetnacl.sign.detached.verify(
-        result.signedMessage,
-        result.signature,
-        wallet.account?.publicKey as Uint8Array,
-      )
-      console.log('verify signature with publicKey via tweetnacl', isSignatureTrue)
-      updateSignResult(toHEX(result.signature));
-    } catch (e) {
-      console.log(e);
-      alert(e);
-    }
-  }
-
-  return (
-    <div className="card lg:card-side bg-base-100 shadow-xl mt-5">
-      <div className="card-body">
-        <h2 className="card-title">Sui Signer</h2>
-        <input
-          placeholder="message to sign"
-          className="mt-8 p-4 input input-bordered input-primary w-full"
-          value={data}
-          onChange={(e) =>
-            updateSignData(e.target.value)
-          }
-        />
-        {
-          result == "" || (<>Signer Reult :  <b>{result}</b> </>)
-        }
-        <div className="card-actions justify-end">
-          <button
-            onClick={signContentAction}
-            className={
-              "btn btn-primary btn-xl"
-            }>
-            Sign Content
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-
-type SwordListPros = { swords: Array<{ id: string, magic: number, strength: number }>, transfer: Function };
+type SwordListPros = { swords: Array<any>, transfer: Function };
 const SwordList = ({ swords, transfer }: SwordListPros) => {
   return swords && (
     <div className="card lg:card-side bg-base-100 shadow-xl mt-5">
       <div className="card-body">
-        <h2 className="card-title">swords list:</h2>
+        <h2 className="card-title">todo list:</h2>
 
         <div className="overflow-x-auto">
           <table className="table w-full">
             <thead>
               <tr>
                 <th>Id</th>
-                <th>Magic</th>
-                <th>Strength</th>
-                <th>Operate</th>
+                <th>title</th>
+                <th>description</th>
+                <th>status</th>
+                <th>-</th>
               </tr>
             </thead>
             <tbody>
@@ -117,8 +32,9 @@ const SwordList = ({ swords, transfer }: SwordListPros) => {
                 swords.map((item, i) =>
                   <tr>
                     <th>{item.id}</th>
-                    <td>{item.magic}</td>
-                    <td>{item.strength} </td>
+                    <td>{item.title}</td>
+                    <td>{item.description} </td>
+                    <td>{item.status} </td>
                     <td>
                       <a href="javascript:;" className="link link-hover link-primary" onClick={() => { transfer(item.id) }}>Transfer</a>
                     </td>
@@ -147,9 +63,7 @@ export default function Home() {
   });
   const [message, setMessage] = useState('');
   const [tx, setTx] = useState('');
-  const [nfts, setNfts] = useState<Array<{ id: string, name: string, url: string, description: string }>>([]);
-  const [swords, setSword] = useState<Array<{ id: string, magic: number, strength: number }>>([]);
-  const [gasObjects, setGasObjects] = useState<Array<{ id: string, value: Number, }>>([]);
+  const [swords, setSword] = useState<Array<any>>([]);
   const [displayModal, toggleDisplay] = useState(false);
   const [recipient, updateRecipient] = useState("");
   const [transfer_id, setTransferId] = useState("");
@@ -176,11 +90,11 @@ export default function Home() {
     }
   }
 
-  function create_example_nft() {
+  function create_todo() {
     const { name, url, description } = formInput;
     return {
-      packageObjectId: BaseAddr,
-      module: 'devnet_nft',
+      packageObjectId: SUI_PACKAGE,
+      module: 'todo',
       function: 'mint',
       typeArguments: [],
       arguments: [
@@ -234,75 +148,35 @@ export default function Home() {
     toggleDisplay(true);
   }
 
-  async function fetch_gas_coins() {
-    const gasObjects = await provider.getGasObjectsOwnedByAddress(account!.address)
-    const gas_ids = gasObjects.map(item => item.objectId)
-    const gasObjectDetail = await provider.getObjectBatch(gas_ids)
-    console.log(gasObjectDetail);
-    const gasList = gasObjectDetail.map((item: any) => {
-      return {
-        id: item.details.data.fields.id.id,
-        value: item.details.data.fields.balance,
-      }
-    });
-    setGasObjects(gasList);
-  }
-
-  async function fetch_example_nft() {
-    const objects = await provider.getObjectsOwnedByAddress(account!.address)
-    const nft_ids = objects
-      .filter(item => item.type === BaseAddr + "::devnet_nft::DevNetNFT")
-      .map(item => item.objectId)
-    const nftObjects = await provider.getObjectBatch(nft_ids)
-    const nfts = nftObjects.filter(item => item.status === "Exists").map((item: any) => {
-      return {
-        id: item.details.data.fields.id.id,
-        name: item.details.data.fields.name,
-        url: item.details.data.fields.url,
-        description: item.details.data.fields.description,
-      }
-    })
-    setNfts(nfts)
-  }
-
   async function fetch_sword() {
     const objects = await provider.getObjectsOwnedByAddress(account!.address)
-    const sword_ids = objects
-      .filter(item => item.type === SUI_PACKAGE + "::" + SUI_MODULE + "::Sword")
+    const todoIds = objects
+      .filter(item => item.type === SUI_PACKAGE + "::" + SUI_MODULE + "::TodoItem")
       .map(item => item.objectId)
-    const swordObjects = await provider.getObjectBatch(sword_ids)
-    const swords = swordObjects.filter(item => item.status === "Exists").map((item: any) => {
+    const swordObjects = await provider.getObjectBatch(todoIds)
+    const todoList = swordObjects.map((item: any) => {
+      console.log(item);
       return {
         id: item.details.data.fields.id.id,
-        magic: item.details.data.fields.magic,
-        strength: item.details.data.fields.strength,
+        title: item.details.data.fields.title,
+        description: item.details.data.fields.description,
+        status: item.details.data.fields.status
       }
     })
-    setSword(swords)
+    setSword(todoList)
   }
 
   useEffect(() => {
     (async () => {
       if (connected) {
-        fetch_example_nft()
         fetch_sword()
       }
     })()
   }, [connected, tx])
 
-  useEffect(() => {
-    (async () => {
-      if (connected) {
-        fetch_gas_coins()
-      }
-    })()
-  }, [connected])
 
   return (
     <div>
-
-      <Signer />
-
       <div className={displayModal ? "modal modal-bottom sm:modal-middle modal-open" : "modal modal-bottom sm:modal-middle"}>
         <div className="modal-box">
           <label onClick={() => { toggleDisplay(false) }} className="btn btn-sm btn-circle absolute right-2 top-2">✕</label>
@@ -326,7 +200,7 @@ export default function Home() {
 
       <div className="card lg:card-side bg-base-100 shadow-xl mt-5">
         <div className="card-body">
-          <h2 className="card-title">Mint Example NFT:</h2>
+          <h2 className="card-title">Add Todo Item:</h2>
           <input
             placeholder="NFT Name"
             className="mt-4 p-4 input input-bordered input-primary w-full"
@@ -355,13 +229,12 @@ export default function Home() {
               className={
                 "btn btn-primary btn-xl"
               }>
-              Mint example NFT
+              Add Todo
             </button>
           </div>
         </div>
       </div>
 
-      <NftList nfts={nfts} />
       <SwordList swords={swords} transfer={transferSword} />
     </div >
   );

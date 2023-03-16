@@ -4,3 +4,4 @@ yarn.lock
 .next
 move_package/build/*
 move_package/sui.log.*
+.env.local
