@@ -1,7 +1,6 @@
 import { useWallet } from "@suiet/wallet-kit";
 import { useEffect, useState } from "react";
 import React from "react";
-import Link from 'next/link';
 import { JsonRpcProvider } from '@mysten/sui.js';
 import { SUI_PACKAGE, SUI_MODULE } from "../config/constants";
 import Head from 'next/head';
@@ -14,12 +13,12 @@ const allStatus: NumberMap<string> = {
   1: "done"
 }
 
-type TodoListPros = { todos: Array<any>, done: Function, remove: Function };
-const TodoList = ({ todos, done, remove }: TodoListPros) => {
+type TodoListPros = { todos: Array<any>, done: Function, remove: Function, loading: Boolean };
+const TodoList = ({ todos, done, remove, loading }: TodoListPros) => {
   return todos && (
     <div className="card lg:card-side bg-base-100 shadow-xl mt-5">
       <div className="card-body">
-        <h2 className="card-title">todo list:</h2>
+        <h2 className="card-title">todo list : {loading && "loading..."}</h2>
 
         <div className="overflow-x-auto">
           <table className="table w-full">
@@ -33,7 +32,6 @@ const TodoList = ({ todos, done, remove }: TodoListPros) => {
               </tr>
             </thead>
             <tbody>
-
               {
                 todos.map((item) =>
                   <tr key={item.id}>
@@ -59,6 +57,7 @@ const TodoList = ({ todos, done, remove }: TodoListPros) => {
 function Home() {
   const provider = new JsonRpcProvider();
   const { account, connected, signAndExecuteTransaction } = useWallet();
+  const [todoLoading, updateTodoLoading] = useState(true);
   const [formInput, updateFormInput] = useState<{
     title: string;
     description: string;
@@ -70,7 +69,6 @@ function Home() {
   const [tx, setTx] = useState('');
   const [todos, setTodos] = useState<Array<any>>([]);
   const [displayModal, toggleDisplay] = useState(false);
-  const [recipient, updateRecipient] = useState("");
   const [todo_id, setTodoId] = useState("");
 
   async function create_new_todo_action() {
@@ -112,7 +110,7 @@ function Home() {
   }
 
   async function doStatusChange(status: string) {
-    function makeTranscaction() {
+    function make_status_change() {
       return {
         packageObjectId: SUI_PACKAGE,
         module: SUI_MODULE,
@@ -129,7 +127,7 @@ function Home() {
 
     setMessage("");
     try {
-      const data = makeTranscaction();
+      const data = make_status_change();
       const resData = await signAndExecuteTransaction({
         transaction: {
           kind: 'moveCall',
@@ -190,6 +188,7 @@ function Home() {
   }
 
   async function fetch_todos() {
+    updateTodoLoading(true);
     const objects = await provider.getObjectsOwnedByAddress(account!.address)
     const todoIds = objects
       .filter(item => item.type === SUI_PACKAGE + "::" + SUI_MODULE + "::TodoItem")
@@ -204,13 +203,15 @@ function Home() {
         statusText: ""
       }
     })
+    console.log(todoList);
     setTodos(todoList)
+    updateTodoLoading(false);
   }
 
   useEffect(() => {
     (async () => {
       if (connected) {
-        fetch_todos()
+        await fetch_todos()
       }
     })()
   }, [connected, tx])
@@ -224,21 +225,33 @@ function Home() {
       <div className={displayModal ? "modal modal-bottom sm:modal-middle modal-open" : "modal modal-bottom sm:modal-middle"}>
         <div className="modal-box">
           <label onClick={() => { toggleDisplay(false) }} className="btn btn-sm btn-circle absolute right-2 top-2">✕</label>
-
+          <h3 className="font-bold text-lg">You will change this todo status!</h3>
           <div className="modal-action">
             <label htmlFor="my-modal-6" className="btn" onClick={() => {
               toggleDisplay(!displayModal);
               doStatusChange("1");
-            }}>Done!</label>
+            }}>Do it!</label>
           </div>
         </div>
       </div>
 
-      <div className="card lg:card-side bg-base-100 shadow-xl mt-5">
+      <div className="card lg:card-side bg-base-100 shadow-xl mt-3">
         <div className="card-body">
+          {
+            message && (
+              <div className="alert alert-info shadow-lg">
+                <div>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current flex-shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  <span>{message}!</span>
+                  <a className="link link-warning" href={tx}> View transaction</a>
+                </div>
+              </div>
+            )
+          }
           <h2 className="card-title">Add Todo Item:</h2>
           <input
             placeholder="title"
+            value={formInput.title}
             className="mt-4 p-4 input input-bordered input-primary w-full"
             onChange={(e) =>
               updateFormInput({ ...formInput, title: e.target.value })
@@ -246,12 +259,12 @@ function Home() {
           />
           <input
             placeholder="description"
+            value={formInput.description}
             className="mt-8 p-4 input input-bordered input-primary w-full"
             onChange={(e) =>
               updateFormInput({ ...formInput, description: e.target.value })
             }
           />
-          <p className="mt-4">{message}{message && <Link href={tx}>, View transaction</Link>}</p>
           <div className="card-actions justify-end">
             <button
               onClick={create_new_todo_action}
@@ -264,7 +277,7 @@ function Home() {
         </div>
       </div>
 
-      <TodoList todos={todos} done={done_action} remove={remove_action} />
+      <TodoList todos={todos} done={done_action} remove={remove_action} loading={todoLoading} />
     </div >
   );
 }
