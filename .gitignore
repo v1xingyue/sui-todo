@@ -6,3 +6,4 @@ move/build/*
 move/sui.log.*
 .env.local
 .account
+move/Move.lock
