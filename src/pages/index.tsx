@@ -65,7 +65,7 @@ function Home() {
     description: "",
   });
   const [message, setMessage] = useState('');
-  const [tx, setTx] = useState('');
+  const [transaction, setTransaction] = useState('');
   const [todos, setTodos] = useState<Array<any>>([]);
   const [displayModal, toggleDisplay] = useState(false);
   const [todo_id, setTodoId] = useState("");
@@ -92,12 +92,14 @@ function Home() {
       console.log('success', resData);
       setMessage('Added succeeded');
       if (resData && resData.digest && resData.digest) {
-        setTx('https://explorer.sui.io/transaction/' + resData.digest + "?network=" + NETWORK);
+        setTransaction('https://explorer.sui.io/transaction/' + resData.digest + "?network=" + NETWORK);
       }
+
+
     } catch (e) {
       console.error('failed', e);
       setMessage('Mint failed: ' + e);
-      setTx('');
+      setTransaction('');
     }
   }
 
@@ -151,12 +153,12 @@ function Home() {
       console.log('success', resData);
       setMessage('Status changed');
       if (resData && resData.digest && resData.digest) {
-        setTx('https://explorer.sui.io/transaction/' + resData.digest + "?network=" + NETWORK);
+        setTransaction('https://explorer.sui.io/transaction/' + resData.digest + "?network=" + NETWORK);
       }
     } catch (e) {
       console.error('failed', e);
       setMessage('Mint failed: ' + e);
-      setTx('');
+      setTransaction('');
     }
   }
 
@@ -183,16 +185,17 @@ function Home() {
       console.log('success', resData);
       setMessage('Todo Removed.');
       if (resData && resData.digest && resData.digest) {
-        setTx('https://explorer.sui.io/transaction/' + resData.digest + "?network=" + NETWORK);
+        setTransaction('https://explorer.sui.io/transaction/' + resData.digest + "?network=" + NETWORK);
       }
     } catch (e) {
       console.error('failed', e);
       setMessage('Mint failed: ' + e);
-      setTx('');
+      setTransaction('');
     }
   }
 
   async function fetch_todos() {
+    console.log("loading todos");
     updateTodoLoading(true);
     const todoItemType = SUI_PACKAGE + "::" + SUI_MODULE + "::TodoItem"
     if (account != null) {
@@ -211,11 +214,11 @@ function Home() {
         let todolist = objects.data.map(item => {
           const { objectId } = item.data as any;
           let content = item.data?.content as any;
-          let { title, description } = content.fields as any;
+          let { title, description, status } = content.fields as any;
           return {
             title,
             description,
-            status: 0,
+            status,
             id: objectId
           }
         })
@@ -234,7 +237,7 @@ function Home() {
         await fetch_todos()
       }
     })()
-  }, [connected, tx])
+  }, [connected, transaction])
 
 
   return (
@@ -263,7 +266,7 @@ function Home() {
                 <div>
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current flex-shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                   <span>{message}!</span>
-                  <a className="link link-warning" href={tx}> View transaction</a>
+                  <a className="link link-warning" href={transaction} target="_blank"> View transaction</a>
                 </div>
               </div>
             )
