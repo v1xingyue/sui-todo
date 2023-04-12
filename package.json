@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@mysten/sui.js": "^0.32.1",
     "@solana/web3.js": "^1.66.2",
     "@suiet/wallet-kit": "^0.2.6",
     "daisyui": "^2.24.0",
