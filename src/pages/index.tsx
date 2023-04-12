@@ -1,8 +1,7 @@
+import React, { useEffect, useState } from "react";
 import { useWallet } from "@suiet/wallet-kit";
-import { useEffect, useState } from "react";
-import React from "react";
-import { JsonRpcProvider } from '@mysten/sui.js';
-import { SUI_PACKAGE, SUI_MODULE } from "../config/constants";
+import { JsonRpcProvider, TransactionBlock } from '@mysten/sui.js';
+import { SUI_PACKAGE, SUI_MODULE, NETWORK } from "../config/constants";
 import Head from 'next/head';
 
 type NumberMap<T> = {
@@ -56,7 +55,7 @@ const TodoList = ({ todos, done, remove, loading }: TodoListPros) => {
 
 function Home() {
   const provider = new JsonRpcProvider();
-  const { account, connected, signAndExecuteTransaction } = useWallet();
+  const { account, connected, signAndExecuteTransactionBlock } = useWallet();
   const [todoLoading, updateTodoLoading] = useState(true);
   const [formInput, updateFormInput] = useState<{
     title: string;
@@ -72,20 +71,28 @@ function Home() {
   const [todo_id, setTodoId] = useState("");
 
   async function create_new_todo_action() {
+    const { title, description } = formInput;
     setMessage("");
     try {
-      const data = create_todo_data()
-      const resData = await signAndExecuteTransaction({
-        transaction: {
-          kind: 'moveCall',
-          data,
-        },
+      const tx = new TransactionBlock()
+
+      tx.moveCall({
+        target: SUI_PACKAGE + "::todo::create_todo_item" as any,
+        arguments: [
+          tx.pure(title),
+          tx.pure(description)
+        ]
+      })
+
+      const resData = await signAndExecuteTransactionBlock({
+        transactionBlock: tx,
       });
+
       updateFormInput({ title: "", description: "" })
       console.log('success', resData);
       setMessage('Added succeeded');
-      if (resData && resData.certificate && resData.certificate.transactionDigest) {
-        setTx('https://explorer.sui.io/transaction/' + resData.certificate.transactionDigest)
+      if (resData && resData.digest && resData.digest) {
+        setTx('https://explorer.sui.io/transaction/' + resData.digest + "?network=" + NETWORK);
       }
     } catch (e) {
       console.error('failed', e);
@@ -127,17 +134,24 @@ function Home() {
 
     setMessage("");
     try {
-      const data = make_status_change();
-      const resData = await signAndExecuteTransaction({
-        transaction: {
-          kind: 'moveCall',
-          data,
-        },
+
+      const tx = new TransactionBlock()
+      tx.moveCall({
+        target: SUI_PACKAGE + "::todo::change_todo_status" as any,
+        arguments: [
+          tx.pure(todo_id),
+          tx.pure(status)
+        ]
+      })
+
+      const resData = await signAndExecuteTransactionBlock({
+        transactionBlock: tx,
       });
+
       console.log('success', resData);
       setMessage('Status changed');
-      if (resData && resData.certificate && resData.certificate.transactionDigest) {
-        setTx('https://explorer.sui.io/transaction/' + resData.certificate.transactionDigest)
+      if (resData && resData.digest && resData.digest) {
+        setTx('https://explorer.sui.io/transaction/' + resData.digest + "?network=" + NETWORK);
       }
     } catch (e) {
       console.error('failed', e);
@@ -152,33 +166,24 @@ function Home() {
   }
 
   async function remove_action(todo_id: string) {
-    function makeTranscaction() {
-      return {
-        packageObjectId: SUI_PACKAGE,
-        module: SUI_MODULE,
-        function: 'delete_todo_item',
-        typeArguments: [],
-        // 类型错误，传递字符串类型，部分钱包会内部转化
-        arguments: [
-          todo_id,
-        ],
-        gasBudget: 30000,
-      };
-    }
-
     setMessage("");
     try {
-      const data = makeTranscaction();
-      const resData = await signAndExecuteTransaction({
-        transaction: {
-          kind: 'moveCall',
-          data,
-        },
+      const tx = new TransactionBlock()
+      tx.moveCall({
+        target: SUI_PACKAGE + "::todo::delete_todo_item" as any,
+        arguments: [
+          tx.pure(todo_id)
+        ]
+      })
+
+      const resData = await signAndExecuteTransactionBlock({
+        transactionBlock: tx,
       });
+
       console.log('success', resData);
       setMessage('Todo Removed.');
-      if (resData && resData.certificate && resData.certificate.transactionDigest) {
-        setTx('https://explorer.sui.io/transaction/' + resData.certificate.transactionDigest)
+      if (resData && resData.digest && resData.digest) {
+        setTx('https://explorer.sui.io/transaction/' + resData.digest + "?network=" + NETWORK);
       }
     } catch (e) {
       console.error('failed', e);
@@ -189,23 +194,38 @@ function Home() {
 
   async function fetch_todos() {
     updateTodoLoading(true);
-    const objects = await provider.getObjectsOwnedByAddress(account!.address)
-    const todoIds = objects
-      .filter(item => item.type === SUI_PACKAGE + "::" + SUI_MODULE + "::TodoItem")
-      .map(item => item.objectId)
-    const swordObjects = await provider.getObjectBatch(todoIds)
-    const todoList = swordObjects.map((item: any) => {
-      return {
-        id: item.details.data.fields.id.id,
-        title: item.details.data.fields.title,
-        description: item.details.data.fields.description,
-        status: item.details.data.fields.status,
-        statusText: ""
+    const todoItemType = SUI_PACKAGE + "::" + SUI_MODULE + "::TodoItem"
+    if (account != null) {
+      const objects = await provider.getOwnedObjects({
+        owner: account.address,
+        filter: {
+          StructType: todoItemType
+        },
+        options: {
+          showType: true,
+          showContent: true,
+          showDisplay: true,
+        }
+      })
+      if (objects.data && objects.data.length > 0) {
+        let todolist = objects.data.map(item => {
+          const { objectId } = item.data as any;
+          let content = item.data?.content as any;
+          let { title, description } = content.fields as any;
+          return {
+            title,
+            description,
+            status: 0,
+            id: objectId
+          }
+        })
+        setTodos(todolist);
+      } else {
+        console.log("no objects found");
       }
-    })
-    console.log(todoList);
-    setTodos(todoList)
+    }
     updateTodoLoading(false);
+
   }
 
   useEffect(() => {
@@ -230,7 +250,7 @@ function Home() {
             <label htmlFor="my-modal-6" className="btn" onClick={() => {
               toggleDisplay(!displayModal);
               doStatusChange("1");
-            }}>Do it!</label>
+            }}>Yes, It's done!! 📒 </label>
           </div>
         </div>
       </div>
