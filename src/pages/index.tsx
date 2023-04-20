@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useWallet } from "@suiet/wallet-kit";
-import { JsonRpcProvider, TransactionBlock } from '@mysten/sui.js';
+import { JsonRpcProvider, TransactionBlock, devnetConnection, testnetConnection } from '@mysten/sui.js';
+
 import { SUI_PACKAGE, SUI_MODULE, NETWORK } from "../config/constants";
 import Head from 'next/head';
 
@@ -54,7 +55,11 @@ const TodoList = ({ todos, done, remove, loading }: TodoListPros) => {
 }
 
 function Home() {
-  const provider = new JsonRpcProvider();
+  let connection = devnetConnection;
+  if (NETWORK == "testnet") {
+    connection = testnetConnection;
+  }
+  const provider = new JsonRpcProvider(connection);
   const { account, connected, signAndExecuteTransactionBlock } = useWallet();
   const [todoLoading, updateTodoLoading] = useState(true);
   const [formInput, updateFormInput] = useState<{
