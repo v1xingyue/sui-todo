@@ -7,3 +7,4 @@ move/sui.log.*
 .env.local
 .account
 move/Move.lock
+sui.log*

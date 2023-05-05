@@ -1,5 +1,5 @@
 {
-  "name": "scaffold-sui",
+  "name": "sui-todo",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -8,12 +8,11 @@
     "start": "next start"
   },
   "dependencies": {
-    "@mysten/sui.js": "^0.32.1",
-    "@solana/web3.js": "^1.66.2",
-    "@suiet/wallet-kit": "^0.2.6",
+    "@mysten/sui.js": "^0.33.0",
+    "@suiet/wallet-kit": "^0.2.10",
     "daisyui": "^2.24.0",
     "dotenv": "^16.0.1",
-    "next": "^12.3.1-canary.0",
+    "next": "^13.4.1",
     "nft.storage": "^7.0.0",
     "react": "18.1.0",
     "react-dom": "18.1.0",

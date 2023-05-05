@@ -11,7 +11,7 @@ import {
 function WalletSelector({ Component, pageProps }: AppProps) {
 
   return (
-    <WalletProvider defaultWallets={AllDefaultWallets}>
+    <WalletProvider defaultWallets={AllDefaultWallets} autoConnect={true}>
       <div className="px-8 rootimage min-h-screen">
         <NavBar />
         <div className="p-8">

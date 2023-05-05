@@ -1,63 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { useWallet } from "@suiet/wallet-kit";
-import { JsonRpcProvider, TransactionBlock, devnetConnection, testnetConnection } from '@mysten/sui.js';
-
+import { JsonRpcProvider, TransactionBlock, devnetConnection, testnetConnection, Connection } from '@mysten/sui.js';
 import { SUI_PACKAGE, SUI_MODULE, NETWORK } from "../config/constants";
 import Head from 'next/head';
-
-type NumberMap<T> = {
-  [key: number]: T;
-};
-const allStatus: NumberMap<string> = {
-  0: "doing",
-  1: "done"
-}
-
-type TodoListPros = { todos: Array<any>, done: Function, remove: Function, loading: Boolean };
-const TodoList = ({ todos, done, remove, loading }: TodoListPros) => {
-  return todos && (
-    <div className="card lg:card-side bg-base-100 shadow-xl mt-5">
-      <div className="card-body">
-        <h2 className="card-title">todo list : {loading && "loading..."}</h2>
-
-        <div className="overflow-x-auto">
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th>Id</th>
-                <th>title</th>
-                <th>description</th>
-                <th>status</th>
-                <th>-</th>
-              </tr>
-            </thead>
-            <tbody>
-              {
-                todos.map((item) =>
-                  <tr key={item.id}>
-                    <th>{item.id}</th>
-                    <td>{item.title}</td>
-                    <td>{item.description} </td>
-                    <td>{allStatus[item.status]} </td>
-                    <td>
-                      <a className="link link-hover link-primary" onClick={() => { done(item.id) }}>Done</a>
-                      <a className="link link-hover link-primary ml-3" onClick={() => { remove(item.id) }}>Remove</a>
-                    </td>
-                  </tr>
-                )
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  )
-}
+import { TodoList } from "../components/TodoList";
 
 function Home() {
   let connection = devnetConnection;
   if (NETWORK == "testnet") {
     connection = testnetConnection;
+  }
+  if (NETWORK == "mainnet") {
+    connection = new Connection({
+      fullnode: "https://fullnode.mainnet.sui.io:443/",
+      faucet: "",
+    });
   }
   const provider = new JsonRpcProvider(connection);
   const { account, connected, signAndExecuteTransactionBlock } = useWallet();
@@ -141,7 +98,6 @@ function Home() {
 
     setMessage("");
     try {
-
       const tx = new TransactionBlock()
       tx.moveCall({
         target: SUI_PACKAGE + "::todo::change_todo_status" as any,
@@ -233,7 +189,6 @@ function Home() {
       }
     }
     updateTodoLoading(false);
-
   }
 
   useEffect(() => {
