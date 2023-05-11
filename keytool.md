@@ -38,3 +38,12 @@ let a = Buffer.from("SwbRLBf8MScAzzglmv8vkbMegNDPXR3GgSJRTeXHh/U=", 'base64')
 const keypair = Ed25519Keypair.fromSeed(a);
 console.log(keypair);
 ```
+
+## 通过助记词导入
+
+```shell
+
+$ sui keytool import "change practice sell trip taste width buyer february shy grow upset interest" ed25519
+
+2023-05-11T15:19:06.691814Z  INFO sui::keytool: Key imported for address [0x5d56ac37a1944e0ef01f03ed4a21cd09e990c8f99ecd9e158fea53b7d506a7f1]
+```
