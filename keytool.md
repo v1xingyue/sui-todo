@@ -25,6 +25,7 @@ Address, keypair and key scheme written to 0xadebd7820da439261f46e8c864df4dda6d4
 ## 加载转化出可用的 keypair seed (base64)
 
 ```shell
+$  sui keytool load-keypair file.store   # file.store 中只保存keystore中，该账户对应的信息
 Account Keypair: AEsG0SwX/DEnAM84JZr/L5GzHoDQz10dxoEiUU3lx4f1
 Network Keypair: SwbRLBf8MScAzzglmv8vkbMegNDPXR3GgSJRTeXHh/U=   ## 这个是 base64 的 seed 可以用来初始化 keypair 
 Worker Keypair: SwbRLBf8MScAzzglmv8vkbMegNDPXR3GgSJRTeXHh/U=
